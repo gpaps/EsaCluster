@@ -76,6 +76,8 @@ def main(cfg: DictConfig):
     detectron_cfg.MODEL.RPN.POST_NMS_TOPK_TRAIN = cfg.training.post_nms_topk_train
     detectron_cfg.MODEL.ROI_HEADS.FOCAL_LOSS_GAMMA = cfg.training.focal_loss_gamma
     detectron_cfg.MODEL.ROI_HEADS.FOCAL_LOSS_ALPHA = cfg.training.focal_loss_alpha
+    detectron_cfg.MODEL.ANCHOR_GENERATOR.SIZES = cfg.training.anchor_sizes
+    detectron_cfg.MODEL.ANCHOR_GENERATOR.ASPECT_RATIOS = cfg.training.anchor_ratios
 
     detectron_cfg.OUTPUT_DIR = cfg.output.dir
     os.makedirs(cfg.output.dir, exist_ok=True)
