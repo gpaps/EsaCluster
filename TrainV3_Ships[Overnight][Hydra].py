@@ -35,7 +35,11 @@ class AugmentedTrainer(DefaultTrainer):
 
 @hydra.main(config_path="config", config_name="train_config", version_base=None)
 def main(cfg: DictConfig):
-    print(f"\n🚀 Starting training with:\n  Dataset: {cfg.dataset.name}\n  LR: {cfg.training.learning_rate}\n  Batch Size: {cfg.training.batch_size}\n  Model: {cfg.model.architecture}\n")
+    print(f"\n🚀 Starting training with:\n"
+          f"  Dataset: {cfg.dataset.name}\n"
+          f"  LR: {cfg.training.learning_rate}\n"
+          f"  Batch Size: {cfg.training.batch_size}\n"
+          f"  Model: {cfg.model.architecture}\n")
 
     ray.init(ignore_reinit_error=True)
     register_dataset()
@@ -47,31 +51,31 @@ def main(cfg: DictConfig):
     detectron_cfg = get_cfg()
     detectron_cfg.merge_from_file(model_zoo.get_config_file(cfg.model.architecture))
     detectron_cfg.DATASETS.TRAIN = (cfg.dataset.name,)
-
     detectron_cfg.DATASETS.TEST = ()
+
     detectron_cfg.DATALOADER.NUM_WORKERS = cfg.training.num_workers
     detectron_cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(cfg.model.architecture)
     detectron_cfg.MODEL.ROI_HEADS.NUM_CLASSES = num_classes
 
     detectron_cfg.SOLVER.IMS_PER_BATCH = cfg.training.batch_size
-    detectron_cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 256
+    detectron_cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = cfg.training.batch_size_per_image
     detectron_cfg.SOLVER.BASE_LR = cfg.training.learning_rate
-    detectron_cfg.SOLVER.MAX_ITER = 1000
-    detectron_cfg.SOLVER.STEPS = (800, 900)
+    detectron_cfg.SOLVER.MAX_ITER = cfg.training.max_iterations
+    detectron_cfg.SOLVER.STEPS = tuple(cfg.training.steps)
     detectron_cfg.SOLVER.GAMMA = 0.1
     detectron_cfg.SOLVER.AMP.ENABLED = True
-    detectron_cfg.SOLVER.CHECKPOINT_PERIOD = 500
+    detectron_cfg.SOLVER.CHECKPOINT_PERIOD = cfg.training.checkpoint_period
 
-    detectron_cfg.MODEL.ROI_HEADS.NMS_THRESH_TRAIN = 0.35
-    detectron_cfg.INPUT.MIN_SIZE_TRAIN = (512, 512)
-    detectron_cfg.INPUT.MIN_SIZE_TEST = 512
+    detectron_cfg.MODEL.ROI_HEADS.NMS_THRESH_TRAIN = cfg.training.nms_thresh_train
+    detectron_cfg.INPUT.MIN_SIZE_TRAIN = tuple(cfg.training.min_size_train)
+    detectron_cfg.INPUT.MIN_SIZE_TEST = cfg.training.min_size_test
     detectron_cfg.INPUT.RANDOM_FLIP = "horizontal"
 
-    detectron_cfg.SOLVER.WEIGHT_DECAY = 0.0001
-    detectron_cfg.MODEL.RPN.PRE_NMS_TOPK_TRAIN = 10000
-    detectron_cfg.MODEL.RPN.POST_NMS_TOPK_TRAIN = 3000
-    detectron_cfg.MODEL.ROI_HEADS.FOCAL_LOSS_GAMMA = 2.0
-    detectron_cfg.MODEL.ROI_HEADS.FOCAL_LOSS_ALPHA = 0.25
+    detectron_cfg.SOLVER.WEIGHT_DECAY = cfg.training.weight_decay
+    detectron_cfg.MODEL.RPN.PRE_NMS_TOPK_TRAIN = cfg.training.pre_nms_topk_train
+    detectron_cfg.MODEL.RPN.POST_NMS_TOPK_TRAIN = cfg.training.post_nms_topk_train
+    detectron_cfg.MODEL.ROI_HEADS.FOCAL_LOSS_GAMMA = cfg.training.focal_loss_gamma
+    detectron_cfg.MODEL.ROI_HEADS.FOCAL_LOSS_ALPHA = cfg.training.focal_loss_alpha
 
     detectron_cfg.OUTPUT_DIR = cfg.output.dir
     os.makedirs(cfg.output.dir, exist_ok=True)
