@@ -51,7 +51,9 @@ def main(cfg: DictConfig):
     detectron_cfg = get_cfg()
     detectron_cfg.merge_from_file(model_zoo.get_config_file(cfg.model.architecture))
     detectron_cfg.DATASETS.TRAIN = (cfg.dataset.name,)
-    detectron_cfg.DATASETS.TEST = ()
+    detectron_cfg.DATASETS.TEST = (cfg.dataset.eval_dataset,)
+    detectron_cfg.TEST.EVAL_PERIOD = cfg.training.checkpoint_period  # every X iters
+
 
     detectron_cfg.DATALOADER.NUM_WORKERS = cfg.training.num_workers
     detectron_cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(cfg.model.architecture)
