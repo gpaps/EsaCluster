@@ -1,5 +1,6 @@
 dataset:
   name: "Ships_Optical"
+  eval_dataset: "Ships_Optical_val"
   json_path: "${hydra:runtime.cwd}/data/Final_Fully_Cleaned_Ships[VHRShips_ShipsImageNet].json"
   image_root: "${hydra:runtime.cwd}/data/_Optical-Ship/VHRShips_ShipRSImageNEt/"
   num_classes: 5
