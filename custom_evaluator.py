@@ -1,8 +1,10 @@
 import os
 import csv
 import numpy as np
+import matplotlib.pyplot as plt
 from detectron2.evaluation import COCOEvaluator
 from detectron2.utils.logger import setup_logger
+
 
 class ShipDetectionEvaluator(COCOEvaluator):
     def __init__(self, dataset_name, cfg, distributed, output_dir=None):
@@ -12,6 +14,7 @@ class ShipDetectionEvaluator(COCOEvaluator):
         self.gt_boxes = []
         self.image_ids = []
         self.output_dir = output_dir
+        self.cfg = cfg
 
     def process(self, inputs, outputs):
         for input, output in zip(inputs, outputs):
@@ -41,7 +44,7 @@ class ShipDetectionEvaluator(COCOEvaluator):
         mae_center = np.mean(np.linalg.norm(gt_centers - pred_centers, axis=1))
 
         results["bbox_center_mae"] = {"MAE(px)": mae_center}
-        self.logger.info(f"MAE (bbox center): {mae_center:.2f} pixels")
+        self.logger.info(f"📏 MAE (bbox center): {mae_center:.2f} pixels")
 
         # Save metrics to CSV
         if self._eval_predictions:
@@ -58,7 +61,7 @@ class ShipDetectionEvaluator(COCOEvaluator):
 
             results["per_class_ap50"] = per_class_ap50
 
-            # Write CSV
+            # Write per-run CSV
             if self.output_dir:
                 csv_path = os.path.join(self.output_dir, "eval_metrics.csv")
                 with open(csv_path, "w", newline="") as csvfile:
@@ -67,6 +70,42 @@ class ShipDetectionEvaluator(COCOEvaluator):
                     writer.writerow(["bbox_center_mae", round(mae_center, 2)])
                     for cls, val in per_class_ap50.items():
                         writer.writerow([f"AP50_{cls}", val])
-                self.logger.info(f"📁 Saved metrics to: {csv_path}")
+                self.logger.info(f"Saved metrics to: {csv_path}")
+
+            # Append to global metrics_summary.csv
+            try:
+                run_info = {
+                    "learning_rate": self.cfg.training.learning_rate,
+                    "batch_size": self.cfg.training.batch_size,
+                    "mae": round(mae_center, 2),
+                }
+                run_info.update({f"AP50_{cls}": val for cls, val in per_class_ap50.items()})
+
+                global_csv = os.path.join(self.cfg.OUTPUT_DIR, "metrics_summary.csv")
+                write_header = not os.path.exists(global_csv)
+                with open(global_csv, "a", newline="") as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=run_info.keys())
+                    if write_header:
+                        writer.writeheader()
+                    writer.writerow(run_info)
+                self.logger.info(f"Appended metrics to global summary: {global_csv}")
+            except Exception as e:
+                self.logger.warning(f"Failed to write global summary: {e}")
+
+            # Save bar chart
+            try:
+                fig, ax = plt.subplots(figsize=(10, 5))
+                ax.bar(per_class_ap50.keys(), per_class_ap50.values(), color="steelblue")
+                ax.set_title("AP@50 per Class")
+                ax.set_ylabel("AP@50")
+                ax.set_ylim(0, 100)
+                plt.xticks(rotation=45)
+                plot_path = os.path.join(self.output_dir, "ap50_per_class.png")
+                plt.tight_layout()
+                plt.savefig(plot_path)
+                plt.close()
+                self.logger.info(f"Saved AP50 bar chart to: {plot_path}")
+            except Exception as e:
+                self.logger.warning(f"Failed to generate AP50 plot: {e}")
 
         return results
