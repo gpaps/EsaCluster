@@ -2,24 +2,31 @@ import os
 from detectron2.data.datasets import register_coco_instances
 from detectron2.data import MetadataCatalog
 
-# Paths
-dataset_name = "Ships_Optical"
-json_path = "/home/gpaps/PycharmProject/ESA/Data/JSON files/1_Ships/Final_Fully_Cleaned_Ships[VHRShips_ShipsImageNet].json"
-image_root = "/home/gpaps/Documents/CVRL Projects/ESA/ESA-Datasets/1_Ships/_Optical-Ship/VHRShips_ShipRSImageNEt/"
-
 def register_dataset():
     """
-    Register the dataset if not already registered.
+    Register training and optional validation dataset.
     """
-    if dataset_name in MetadataCatalog.list():
-        print(f"Dataset {dataset_name} already registered.")
-        return
+    train_name = "Ships_Optical"
+    val_name = "Ships_Optical_val"
 
-    assert os.path.exists(json_path), f"JSON file not found: {json_path}"
-    assert os.path.exists(image_root), f"Image directory not found: {image_root}"
+    base_path = os.getcwd()  # allows Hydra to work with relative paths
+    json_train = os.path.join(base_path, "Final_Fully_Cleaned_Ships[VHRShips_ShipsImageNEt].json")
+    img_train = os.path.join(base_path, "_Optical-Ship/VHRShips_ShipRSImageNEt/")
 
-    register_coco_instances(dataset_name, {}, json_path, image_root)
-    print(f" Successfully registered dataset: {dataset_name}")
+    json_val = os.path.join(base_path, "Final_Fully_Cleaned_Ships[VHRShips_ShipsImageNEt].json")
+    img_val = img_train  # assuming images are shared
 
-if __name__ == "__main__":
-    register_dataset()
+    if train_name not in MetadataCatalog.list():
+        register_coco_instances(train_name, {}, json_train, img_train)
+        print(f"Registered training set: {train_name}")
+    else:
+        print(f"Training set {train_name} already registered.")
+
+    if os.path.exists(json_val):
+        if val_name not in MetadataCatalog.list():
+            register_coco_instances(val_name, {}, json_val, img_val)
+            print(f" Registered validation set: {val_name}")
+        else:
+            print(f"Validation set {val_name} already registered.")
+    else:
+        print(f" Validation JSON not found at: {json_val}")
