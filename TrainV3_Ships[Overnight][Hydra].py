@@ -16,7 +16,7 @@ from custom_evaluator import ShipDetectionEvaluator  # our custom evaluator(lets
 # Suppress warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-# 🧠 Augmented Trainer with custom data loader + custom evaluator
+# Augmented Trainer with custom data loader + custom evaluator
 class AugmentedTrainer(DefaultTrainer):
     @classmethod
     def build_train_loader(cls, cfg):
