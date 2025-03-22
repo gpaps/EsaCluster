@@ -1,21 +1,31 @@
 dataset:
   name: "Ships_Optical"
-  json_path: "${hydra:runtime.cwd}/Final_Fully_Cleaned_Ships[VHRShips_ShipsImageNet].json"
-  image_root: "${hydra:runtime.cwd}/_Optical-Ship/VHRShips_ShipRSImageNEt/"
-  num_classes: 5  #
+  json_path: "${hydra:runtime.cwd}/data/Final_Fully_Cleaned_Ships[VHRShips_ShipsImageNet].json"
+  image_root: "${hydra:runtime.cwd}/data/_Optical-Ship/VHRShips_ShipRSImageNEt/"
+  num_classes: 5
 
 model:
   architecture: "COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
 
 training:
-  batch_size: 2
-  learning_rate: 0.0002
-  max_iterations: 10
+  batch_size: 4
+  learning_rate: 0.00025
+  max_iterations: 150000
   num_workers: 4
   weight_decay: 0.0001
+  steps: [20000, 50000, 70000]
+  checkpoint_period: 10000
+  focal_loss_gamma: 2.0
+  focal_loss_alpha: 0.25
+  batch_size_per_image: 256
+  nms_thresh_train: 0.35
+  pre_nms_topk_train: 10000
+  post_nms_topk_train: 3000
+  min_size_train: [512, 512]
+  min_size_test: 512
 
 output:
-  dir: "../trained_models/Optical_Ships_v6[hydraCluster]"
+  dir: "../trained_models/Optical_Ships_v6[hydra_cluster]"
 
 hydra:
   run:
