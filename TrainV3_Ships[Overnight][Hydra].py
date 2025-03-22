@@ -11,11 +11,12 @@ from detectron2.data import build_detection_train_loader, DatasetMapper
 from detectron2.data import transforms as T
 from detectron2 import model_zoo
 from register_dataset import register_dataset
+from custom_evaluator import ShipDetectionEvaluator  # our custom evaluator(letshopeitwotbreak eveyrhting_)
 
 # Suppress warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-
+# 🧠 Augmented Trainer with custom data loader + custom evaluator
 class AugmentedTrainer(DefaultTrainer):
     @classmethod
     def build_train_loader(cls, cfg):
@@ -32,10 +33,16 @@ class AugmentedTrainer(DefaultTrainer):
             ]),
         )
 
+    @classmethod # custom evaluator
+    def build_evaluator(cls, cfg, dataset_name, output_folder=None):
+        if output_folder is None:
+            output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
+        return ShipDetectionEvaluator(dataset_name, cfg, True, output_folder)
+
 
 @hydra.main(config_path="config", config_name="train_config", version_base=None)
 def main(cfg: DictConfig):
-    print(f"\n🚀 Starting training with:\n"
+    print(f"\n Starting training with:\n"
           f"  Dataset: {cfg.dataset.name}\n"
           f"  LR: {cfg.training.learning_rate}\n"
           f"  Batch Size: {cfg.training.batch_size}\n"
@@ -52,8 +59,7 @@ def main(cfg: DictConfig):
     detectron_cfg.merge_from_file(model_zoo.get_config_file(cfg.model.architecture))
     detectron_cfg.DATASETS.TRAIN = (cfg.dataset.name,)
     detectron_cfg.DATASETS.TEST = (cfg.dataset.eval_dataset,)
-    detectron_cfg.TEST.EVAL_PERIOD = cfg.training.checkpoint_period  # every X iters
-
+    detectron_cfg.TEST.EVAL_PERIOD = cfg.training.checkpoint_period
 
     detectron_cfg.DATALOADER.NUM_WORKERS = cfg.training.num_workers
     detectron_cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(cfg.model.architecture)
